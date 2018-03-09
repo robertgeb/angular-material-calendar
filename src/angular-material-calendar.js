@@ -12,20 +12,6 @@ angular.module("materialCalendar").config(["materialCalendar.config", "$logProvi
     }
 }]);
 
-angular.module("materialCalendar").directive("compile", ["$compile", function ($compile) {
-    return function(scope, element, attrs) {
-        scope.$watch(
-            function(scope) {
-                return scope.$eval(attrs.compile);
-            },
-            function(value) {
-                element.html(value);
-                $compile(element.contents())(scope);
-            }
-        );
-    };
-}]);
-
 angular.module("materialCalendar").service("materialCalendar.Calendar", [function () {
 
     function Calendar(year, month, options) {
@@ -172,7 +158,7 @@ angular.module("materialCalendar").service("MaterialCalendarData", [function () 
         };
 
         this.setDayContent = function(date, content) {
-            this.data[this.getDayKey(date)] = content || "";
+            this.data[this.getDayKey(date)] = content || this.data[this.getDayKey(date)] || "";
         };
     }
     return new CalendarData();
@@ -270,7 +256,10 @@ angular.module("materialCalendar").directive("calendarMd", ["$compile", "$parse"
                     dateEnd.setDate(dateStart.getDate()+parseInt(noOfDays));
                     if (date.getDate() <= dateStart && date.getDate() >= dateEnd) { return true; }
                 }
-                if ($scope.disableSelection) { return true; }
+
+                if ($scope.disableSelection === true || ("function" === typeof $scope.disableSelection && ($scope.disableSelection)(date)))
+                    return true;
+
                 if ($scope.disableFutureSelection && date > new Date()) { return true; }
                 return !$scope.sameMonth(date);
             };
@@ -342,15 +331,6 @@ angular.module("materialCalendar").directive("calendarMd", ["$compile", "$parse"
             };
 
             $scope.handleDayClick = function (date) {
-
-                if($scope.disableFutureSelection && date > new Date()) {
-                    return;
-                }
-
-                if($scope.disableSelection) {
-                    return;
-                }
-
                 var active = angular.copy($scope.active);
                 if (angular.isArray(active)) {
                     var idx = dateFind(active, date);
@@ -395,7 +375,7 @@ angular.module("materialCalendar").directive("calendarMd", ["$compile", "$parse"
                     return $templateRequest($scope.templateUrl);
                 }
 
-                return $q.when($scope.template() || defaultTemplate);
+                return $q.resolve($scope.template() || defaultTemplate);
             };
 
 
